@@ -365,6 +365,11 @@ export const outerExtender = customQuery(inner, {
     return { ctx: { outer: [args.outer, ctx.inner] }, args: {} };
   },
 });
+function _checkOuterExtender(ctx: CustomCtx<typeof outerExtender>) {
+  assertType<string>(ctx.inner);
+  assertType<string[]>(ctx.outer);
+}
+void _checkOuterExtender;
 export const outerExtends = outerExtender({
   args: { a: v.string() },
   handler: async (ctx, args) => {

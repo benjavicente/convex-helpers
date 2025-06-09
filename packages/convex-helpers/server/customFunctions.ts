@@ -25,7 +25,6 @@ import type {
   DefaultFunctionArgs,
   FunctionVisibility,
   GenericActionCtx,
-  GenericDataModel,
   GenericMutationCtx,
   GenericQueryCtx,
   MutationBuilder,
@@ -142,22 +141,23 @@ export const NoOp = {
  * @returns A new query builder to define queries with modified ctx and args.
  */
 export function customQuery<
+  Builder extends
+    | QueryBuilder<any, FunctionVisibility>
+    | CustomBuilder<"query", any, any, any, any, any>,
   ModArgsValidator extends PropertyValidators,
   ModCtx extends Record<string, any>,
   ModMadeArgs extends Record<string, any>,
-  Visibility extends FunctionVisibility,
-  DataModel extends GenericDataModel,
 >(
-  query: QueryBuilder<DataModel, Visibility>,
-  mod: Mod<GenericQueryCtx<DataModel>, ModArgsValidator, ModCtx, ModMadeArgs>,
+  query: Builder,
+  mod: Mod<InputCtxFromBuilder<Builder>, ModArgsValidator, ModCtx, ModMadeArgs>,
 ) {
-  return customFnBuilder(query, mod) as CustomBuilder<
+  return customFnBuilder(query as any, mod) as CustomBuilder<
     "query",
     ModArgsValidator,
     ModCtx,
     ModMadeArgs,
-    GenericQueryCtx<DataModel>,
-    Visibility
+    InputCtxFromBuilder<Builder>,
+    VisibilityOfBuilder<Builder>
   >;
 }
 
@@ -214,27 +214,23 @@ export function customQuery<
  * @returns A new mutation builder to define queries with modified ctx and args.
  */
 export function customMutation<
+  Builder extends
+    | MutationBuilder<any, FunctionVisibility>
+    | CustomBuilder<"mutation", any, any, any, any, any>,
   ModArgsValidator extends PropertyValidators,
   ModCtx extends Record<string, any>,
   ModMadeArgs extends Record<string, any>,
-  Visibility extends FunctionVisibility,
-  DataModel extends GenericDataModel,
 >(
-  mutation: MutationBuilder<DataModel, Visibility>,
-  mod: Mod<
-    GenericMutationCtx<DataModel>,
-    ModArgsValidator,
-    ModCtx,
-    ModMadeArgs
-  >,
+  mutation: Builder,
+  mod: Mod<InputCtxFromBuilder<Builder>, ModArgsValidator, ModCtx, ModMadeArgs>,
 ) {
-  return customFnBuilder(mutation, mod) as CustomBuilder<
+  return customFnBuilder(mutation as any, mod) as CustomBuilder<
     "mutation",
     ModArgsValidator,
     ModCtx,
     ModMadeArgs,
-    GenericMutationCtx<DataModel>,
-    Visibility
+    InputCtxFromBuilder<Builder>,
+    VisibilityOfBuilder<Builder>
   >;
 }
 
@@ -293,29 +289,30 @@ export function customMutation<
  * @returns A new action builder to define queries with modified ctx and args.
  */
 export function customAction<
+  Builder extends
+    | ActionBuilder<any, FunctionVisibility>
+    | CustomBuilder<"action", any, any, any, any, any>,
   ModArgsValidator extends PropertyValidators,
   ModCtx extends Record<string, any>,
   ModMadeArgs extends Record<string, any>,
-  Visibility extends FunctionVisibility,
-  DataModel extends GenericDataModel,
 >(
-  action: ActionBuilder<DataModel, Visibility>,
-  mod: Mod<GenericActionCtx<DataModel>, ModArgsValidator, ModCtx, ModMadeArgs>,
+  action: Builder,
+  mod: Mod<InputCtxFromBuilder<Builder>, ModArgsValidator, ModCtx, ModMadeArgs>,
 ): CustomBuilder<
   "action",
   ModArgsValidator,
   ModCtx,
   ModMadeArgs,
-  GenericActionCtx<DataModel>,
-  Visibility
+  InputCtxFromBuilder<Builder>,
+  VisibilityOfBuilder<Builder>
 > {
-  return customFnBuilder(action, mod) as CustomBuilder<
+  return customFnBuilder(action as any, mod) as CustomBuilder<
     "action",
     ModArgsValidator,
     ModCtx,
     ModMadeArgs,
-    GenericActionCtx<DataModel>,
-    Visibility
+    InputCtxFromBuilder<Builder>,
+    VisibilityOfBuilder<Builder>
   >;
 }
 
@@ -478,5 +475,27 @@ export type CustomCtx<Builder> =
   >
     ? Overwrite<InputCtx, ModCtx>
     : never;
+
+type InputCtxFromBuilder<B> =
+  B extends CustomBuilder<any, any, infer ModCtx, any, infer InCtx, any>
+    ? Overwrite<InCtx, ModCtx>
+    : B extends QueryBuilder<infer DM, any>
+      ? GenericQueryCtx<DM>
+      : B extends MutationBuilder<infer DM, any>
+        ? GenericMutationCtx<DM>
+        : B extends ActionBuilder<infer DM, any>
+          ? GenericActionCtx<DM>
+          : never;
+
+type VisibilityOfBuilder<B> =
+  B extends CustomBuilder<any, any, any, any, any, infer V>
+    ? V
+    : B extends QueryBuilder<any, infer V>
+      ? V
+      : B extends MutationBuilder<any, infer V>
+        ? V
+        : B extends ActionBuilder<any, infer V>
+          ? V
+          : never;
 
 type Overwrite<T, U> = Omit<T, keyof U> & U;
